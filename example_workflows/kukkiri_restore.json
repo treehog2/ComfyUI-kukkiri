@@ -1,0 +1,13 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1, "type": "KukkiriRestore", "pos": [100, 100], "size": [420, 230], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [], "outputs": [{"name": "video_path", "type": "STRING", "links": null}],
+      "properties": {"Node name for S&R": "KukkiriRestore"},
+      "widgets_values": ["C:/videos/input.mp4", "kiyo-ltx-v1", "normal", "off", false, "", "kukkiri/restored"]
+    }
+  ],
+  "links": [], "groups": [], "config": {}, "extra": {}, "version": 0.4
+}

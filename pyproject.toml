@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-kukkiri"
+description = "Restore mosaic-censored video in ComfyUI with kukkiri (kiyo-v4, kiyo-ltx: LTX-2.5 fine-tuned to restore mosaics)."
+version = "0.5.0"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/treehog2/ComfyUI-kukkiri"
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-kukkiri"
+Icon = ""
