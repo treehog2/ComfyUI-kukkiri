@@ -19,7 +19,7 @@ The node finds kukkiri by itself (the Windows app's install folder, or `kukkiri`
 
 ## Quick start
 
-1. Open the template *kukkiri_restore* (Workflow, Browse Templates, ComfyUI-kukkiri): **Load Video**, **Kukkiri
+1. Open the template *kukkiri_v2v_restore* (Workflow, Browse Templates, ComfyUI-kukkiri): **Load Video**, **Kukkiri
    Mosaic Restore**, **Save Video**.
 2. Pick or upload your video in Load Video and choose a `model`.
 3. Queue. The first restore downloads the model weights; Save Video writes the result under `output/kukkiri/`.
@@ -34,6 +34,21 @@ The node finds kukkiri by itself (the Windows app's install folder, or `kukkiri`
 | `vr` | side-by-side 180° VR, optionally with a fisheye-pixelated mosaic (VR with kiyo-ltx needs a 30 GB GPU) |
 | `keep_fps` | kiyo-ltx restores 60 fps videos at 30 fps unless this is on (about twice as slow) |
 | `kukkiri_path` | optional: the kukkiri command, if it is not found automatically |
+
+## The kiyo-ltx LoRA without kukkiri
+
+The template *ltx25_v2v_restore_core_nodes* runs the kiyo-ltx LoRA on Lightricks' standard LTX-2.5 model inside ComfyUI, with
+core nodes only and no kukkiri install: **Load Video**, the LoRA on **LTX-2.5 22B dev**, the video as an
+**LTXVAddGuide** reference, two sampling steps (**ManualSigmas** `1.0, 0.725, 0.0`), **LTXVCropGuides**, **Save Video**.
+The size and length of the generation follow the loaded video (rounded to multiples of 32 and to 8k + 1 frames).
+
+- It needs a recent ComfyUI (with LTX-2.5 support) and these models, which the template offers to download:
+  `ltx-2.5-22b-dev-transformer-comfy-int8-convrot`, `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot` and
+  `ltx-2.5-video-vae-conv-bf16` from [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) (accept its
+  licence on Hugging Face first), and `kiyo-ltx-v1-lora.safetensors` from
+  [treehog/kukkiri](https://huggingface.co/treehog/kukkiri/tree/main/ltx-v1).
+- The whole video is one generation, so keep it to a few seconds; for full videos use **Kukkiri Mosaic Restore**, which
+  works through them clip by clip.
 
 ## License
 
