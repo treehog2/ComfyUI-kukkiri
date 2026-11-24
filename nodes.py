@@ -11,7 +11,10 @@ import folder_paths
 
 MODELS = ["kiyo-v4", "kiyo-ltx-v1"]
 VR = ["off", "side-by-side", "side-by-side, fisheye mosaic"]
-_PCT = re.compile(r"remaster:\s+([0-9.]+)%")
+_PCT = re.compile(r"(detect|ltx|preparing|remaster|remux|download):\s+([0-9.]+)%")
+_STAGES = {"download": "First run: downloading the models", "preparing": "Preparing", "detect": "Finding mosaics",
+           "ltx": "Restoring with LTX", "remaster": "Restoring", "remux": "Finishing"}
+_FILE = re.compile(r"^downloading (\S+) \(([0-9]+) MB\)")
 _SHOW = re.compile(r"^(downloading|weights |done:|error:|kukkiri\.)")
 _DROP_ENV = ("PYTORCH_CUDA_ALLOC_CONF", "PYTHONPATH", "PYTHONHOME")
 
@@ -28,24 +31,35 @@ def _kukkiri_command(given: str) -> list[str]:
     if found:
         return [found]
     raise RuntimeError(
-        "kukkiri was not found: install the kukkiri app (Windows) or kukkiri from source (Linux), or give the path to its "
-        "command in the node's `kukkiri` input (e.g. C:\\Users\\you\\AppData\\Local\\Programs\\kukkiri\\kukkiri.cmd)"
+        "kukkiri was not found: install the kukkiri app (Windows) or kukkiri from source (Linux), see "
+        "https://github.com/treehog2/kukkiri/releases , or give the path to its command in the node's `kukkiri_path` input "
+        "(e.g. C:\\Users\\you\\AppData\\Local\\Programs\\kukkiri\\kukkiri.cmd)"
     )
+
+
+def _source_file(video) -> Path:
+    src = video.get_stream_source()
+    start, duration = video.get_active_trim_window() if hasattr(video, "get_active_trim_window") else (0.0, 0.0)
+    if isinstance(src, str) and not start and not duration:
+        return Path(src)
+    out_dir, name, counter, _, _ = folder_paths.get_save_image_path("kukkiri_in", folder_paths.get_temp_directory())
+    path = Path(out_dir) / f"{name}_{counter:05}.mp4"
+    video.save_to(str(path))
+    return path
 
 
 class KukkiriRestore:
 
     CATEGORY = "kukkiri"
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("video_path",)
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("video",)
     FUNCTION = "restore"
-    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "video_path": ("STRING", {"default": "", "tooltip": "the video file to restore"}),
+                "video": ("VIDEO", {"tooltip": "the video to restore (connect Load Video)"}),
                 "model": (MODELS, {"default": "kiyo-ltx-v1",
                                    "tooltip": "kiyo-ltx-v1: best quality, needs an 8 GB GPU and a 15 GB download on first "
                                               "use; kiyo-v4: fast, any supported GPU"}),
@@ -57,21 +71,20 @@ class KukkiriRestore:
                                                     "twice as slow); by default they are restored at 30 fps"}),
             },
             "optional": {
-                "kukkiri": ("STRING", {"default": "", "tooltip": "path to the kukkiri command, if it is not found "
+                "kukkiri_path": ("STRING", {"default": "", "tooltip": "path to the kukkiri command, if it is not found "
                                                                  "automatically"}),
-                "filename_prefix": ("STRING", {"default": "kukkiri/restored"}),
             },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    def restore(self, video_path, model, sensitivity, vr, keep_fps, kukkiri="", filename_prefix="kukkiri/restored"):
+    def restore(self, video, model, sensitivity, vr, keep_fps, kukkiri_path="", unique_id=None):
         import comfy.utils
+        from comfy_api.input_impl import VideoFromFile
 
-        src = Path(video_path.strip().strip('"'))
-        if not src.is_file():
-            raise FileNotFoundError(f"no such video: {src}")
-        out_dir, name, counter, _, _ = folder_paths.get_save_image_path(filename_prefix, folder_paths.get_output_directory())
+        src = _source_file(video)
+        out_dir, name, counter, _, _ = folder_paths.get_save_image_path("kukkiri", folder_paths.get_temp_directory())
         dst = Path(out_dir) / f"{name}_{counter:05}.mp4"
-        cmd = _kukkiri_command(kukkiri) + ["restore", str(src), "-o", str(dst), "--model", model, "--skip-check"]
+        cmd = _kukkiri_command(kukkiri_path) + ["restore", str(src), "-o", str(dst), "--model", model, "--skip-check"]
         if sensitivity != "normal":
             cmd += ["--sensitivity", sensitivity]
         if keep_fps:
@@ -82,7 +95,19 @@ class KukkiriRestore:
         env = {k: v for k, v in os.environ.items() if k not in _DROP_ENV}
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
                              errors="replace", env=env)
-        tail, buf = [], ""
+        tail, buf, stage, file, shown = [], "", None, "", None
+
+        def status(text):
+            nonlocal shown
+            if text != shown and unique_id is not None:
+                shown = text
+                try:
+                    from server import PromptServer
+
+                    PromptServer.instance.send_progress_text(text, unique_id)
+                except Exception:
+                    pass
+
         while True:
             ch = p.stdout.read(1)
             if not ch:
@@ -92,8 +117,19 @@ class KukkiriRestore:
                 continue
             m = _PCT.search(buf)
             if m:
-                bar.update_absolute(int(float(m.group(1))), 100)
+                if m.group(1) != stage:
+                    stage = m.group(1)
+                    print(f"[kukkiri] {stage}", flush=True)
+                pct = int(float(m.group(2)))
+                bar.update_absolute(pct, 100)
+                if stage == "preparing":
+                    status("Loading the models…")
+                else:
+                    status(f"{_STAGES.get(stage, stage)}{file if stage == 'download' else ''}: {pct}%")
             elif buf.strip():
+                f = _FILE.search(buf.strip())
+                if f:
+                    file = f" ({f.group(1)}, {int(f.group(2)) / 1000:.1f} GB)" if int(f.group(2)) >= 1000 else f" ({f.group(1)})"
                 if _SHOW.search(buf.strip()):
                     print(f"[kukkiri] {buf.strip()}", flush=True)
                 tail = (tail + [buf])[-20:]
@@ -101,8 +137,9 @@ class KukkiriRestore:
         if p.wait() != 0 or not dst.is_file():
             raise RuntimeError("kukkiri failed:\n" + "\n".join(tail))
         bar.update_absolute(100, 100)
-        return {"ui": {"text": [str(dst)]}, "result": (str(dst),)}
+        status("Done")
+        return (VideoFromFile(str(dst)),)
 
 
 NODE_CLASS_MAPPINGS = {"KukkiriRestore": KukkiriRestore}
-NODE_DISPLAY_NAME_MAPPINGS = {"KukkiriRestore": "kukkiri Restore"}
+NODE_DISPLAY_NAME_MAPPINGS = {"KukkiriRestore": "Kukkiri Mosaic Restore"}

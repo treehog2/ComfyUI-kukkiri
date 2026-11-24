@@ -15,27 +15,25 @@ pipeline around it).
    `git clone https://github.com/treehog2/ComfyUI-kukkiri` into `ComfyUI/custom_nodes`. Restart ComfyUI.
 
 The node finds kukkiri by itself (the Windows app's install folder, or `kukkiri` on the PATH); otherwise set the
-`KUKKIRI` environment variable, or the node's `kukkiri` input, to its command.
+`KUKKIRI` environment variable, or the node's `kukkiri_path` input, to its command.
 
 ## Quick start
 
-1. Add **kukkiri Restore** (category *kukkiri*), or load `example_workflows/kukkiri_restore.json`.
-2. Set `video_path` to your video and pick a `model`.
-3. Queue. The first restore downloads the model weights; the result is saved under ComfyUI's `output/kukkiri/` and
-   its path comes out of the node (load it with any video loader, e.g. VideoHelperSuite's *Load Video (Path)*, to
-   continue in the graph).
+1. Open the template *kukkiri_restore* (Workflow, Browse Templates, ComfyUI-kukkiri): **Load Video**, **Kukkiri
+   Mosaic Restore**, **Save Video**.
+2. Pick or upload your video in Load Video and choose a `model`.
+3. Queue. The first restore downloads the model weights; Save Video writes the result under `output/kukkiri/`.
 
 ## Inputs
 
 | Input | |
 |---|---|
-| `video_path` | the video to restore |
+| `video` | the video to restore (from Load Video); the node outputs the restored video |
 | `model` | `kiyo-ltx-v1`: best quality; 8 GB GPU (slower below 32 GB), 15 GB download on first use. `kiyo-v4`: fast |
 | `sensitivity` | `high` also finds faint or small mosaics, `low` makes fewer false detections |
 | `vr` | side-by-side 180° VR, optionally with a fisheye-pixelated mosaic (VR with kiyo-ltx needs a 30 GB GPU) |
 | `keep_fps` | kiyo-ltx restores 60 fps videos at 30 fps unless this is on (about twice as slow) |
-| `kukkiri` | optional: the kukkiri command, if it is not found automatically |
-| `filename_prefix` | optional: where under `output/` the result goes |
+| `kukkiri_path` | optional: the kukkiri command, if it is not found automatically |
 
 ## License
 
