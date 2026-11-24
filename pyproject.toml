@@ -1,7 +1,8 @@
 [project]
 name = "comfyui-kukkiri"
-description = "Restore mosaic-censored video in ComfyUI with kukkiri (kiyo-v4, kiyo-ltx: LTX-2.5 fine-tuned to restore mosaics)."
-version = "0.5.0"
+description = "Mosaic restoration for video: restore pixelated (mosaic-censored) areas with kukkiri's kiyo-ltx (LTX-2.5 fine-tuned for mosaic removal) and kiyo-v4. Also a core-nodes LTX-2.5 V2V template for the kiyo-ltx LoRA."
+keywords = ["mosaic", "mosaic restoration", "mosaic removal", "demosaic", "pixelation", "video restoration", "LTX-2.5", "LTX", "v2v"]
+version = "0.6.30"
 license = { file = "LICENSE" }
 dependencies = []
 
@@ -9,6 +10,6 @@ dependencies = []
 Repository = "https://github.com/treehog2/ComfyUI-kukkiri"
 
 [tool.comfy]
-PublisherId = ""
-DisplayName = "ComfyUI-kukkiri"
-Icon = ""
+PublisherId = "treehog"
+DisplayName = "Kukkiri Mosaic Restoration"
+Icon = "https://raw.githubusercontent.com/treehog2/kukkiri/main/docs/media/logo.png"
