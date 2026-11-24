@@ -2,7 +2,7 @@
 
 ComfyUI nodes for [kukkiri](https://github.com/treehog2/kukkiri): restore mosaic-censored video, with kiyo-v4 or
 **kiyo-ltx-v1** (Lightricks' LTX-2.5 fine-tuned to restore mosaics, with the whole detect / crop / restore / blend
-pipeline around it).
+pipeline around it), or add block mosaics to a video.
 
 ## Install
 
@@ -34,6 +34,14 @@ The node finds kukkiri by itself (the Windows app's install folder, or `kukkiri`
 | `vr` | side-by-side 180° VR, optionally with a fisheye-pixelated mosaic (VR with kiyo-ltx needs a 30 GB GPU) |
 | `keep_fps` | kiyo-ltx restores 60 fps videos at 30 fps unless this is on (about twice as slow) |
 | `kukkiri_path` | optional: the kukkiri command, if it is not found automatically |
+
+## Kukkiri Mosaic Add
+
+The opposite direction: adds a block mosaic over the bare genitals in the video (square blocks on a grid fixed to the
+frame). Open the template *kukkiri_v2v_add_mosaic*: **Load Video** → **Kukkiri Mosaic Add** → **Save Video**.
+`sensitivity` `high` misses fewer (and may mosaic a few things that are not genitals); `block_size` is the block size
+in pixels (0: a 36th of the frame height). It is best effort, so check the result: a frame the detector misses for longer than a
+few frames stays uncensored.
 
 ## The kiyo-ltx LoRA without kukkiri
 
