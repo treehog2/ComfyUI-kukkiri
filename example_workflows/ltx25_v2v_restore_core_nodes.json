@@ -2,7 +2,7 @@
  "id": "304b3cc0-21e8-4752-bb75-66655572d80d",
  "revision": 0,
  "last_node_id": 0,
- "last_link_id": 37,
+ "last_link_id": 39,
  "nodes": [
   {
    "id": "load",
@@ -93,13 +93,17 @@
      "localized_name": "audio",
      "name": "audio",
      "type": "AUDIO",
-     "links": null
+     "links": [
+      39
+     ]
     },
     {
      "localized_name": "fps",
      "name": "fps",
      "type": "FLOAT",
-     "links": null
+     "links": [
+      38
+     ]
     },
     {
      "localized_name": "bit_depth",
@@ -1081,7 +1085,7 @@
      "name": "audio",
      "shape": 7,
      "type": "AUDIO",
-     "link": null
+     "link": 39
     },
     {
      "localized_name": "fps",
@@ -1090,7 +1094,7 @@
      "widget": {
       "name": "fps"
      },
-     "link": null
+     "link": 38
     },
     {
      "localized_name": "bit_depth",
@@ -1926,6 +1930,22 @@
    "fit",
    3,
    "INT"
+  ],
+  [
+   38,
+   "comp",
+   2,
+   "mk",
+   2,
+   "FLOAT"
+  ],
+  [
+   39,
+   "comp",
+   1,
+   "mk",
+   1,
+   "AUDIO"
   ]
  ],
  "groups": [],

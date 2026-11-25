@@ -31,8 +31,9 @@ The node finds kukkiri by itself (the Windows app's install folder, or `kukkiri`
 | `video` | the video to restore (from Load Video); the node outputs the restored video |
 | `model` | `kiyo-ltx-v1`: best quality; 8 GB GPU (slower below 32 GB), 15 GB download on first use. `kiyo-v4`: fast |
 | `sensitivity` | `high` also finds faint or small mosaics, `low` makes fewer false detections |
-| `vr` | side-by-side 180° VR, optionally with a fisheye-pixelated mosaic (VR with kiyo-ltx needs a 30 GB GPU) |
+| `vr` | side-by-side 180° VR, optionally with a fisheye-pixelated mosaic (VR with kiyo-ltx needs a 32 GB GPU) |
 | `keep_fps` | kiyo-ltx restores 60 fps videos at 30 fps unless this is on (about twice as slow) |
+| `run_on_full_frame` | kiyo-ltx: redraws the whole picture, for mosaics that are not found otherwise. Slow, needs a high-VRAM GPU, also redraws faces and areas without a mosaic |
 | `kukkiri_path` | optional: the kukkiri command, if it is not found automatically |
 
 ## Kukkiri Mosaic Add

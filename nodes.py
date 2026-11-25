@@ -15,7 +15,10 @@ _PCT = re.compile(r"(detect|ltx|preparing|remaster|remux|download|mosaic):\s+([0
 _STAGES = {"download": "First run: downloading the models", "preparing": "Preparing", "detect": "Finding mosaics",
            "ltx": "Restoring with LTX", "remaster": "Restoring", "remux": "Finishing", "mosaic": "Adding mosaics"}
 _FILE = re.compile(r"^downloading (\S+) \(([0-9]+) MB\)")
-_SHOW = re.compile(r"^(downloading|weights |done:|error:|kukkiri\.)")
+_SHOW = re.compile(r"^(downloading|weights |done:|error:|failed:|kukkiri\.)")
+_NONE_FOUND = re.compile(r"^done:.*\(0 of [0-9]+ frames restored")
+_NONE_FOUND_HELP = ("No mosaics found, so the video is unchanged. If it has one, try sensitivity 'high', or run_on_full_frame "
+                    "(kiyo-ltx only; redraws the whole picture, needs a high-VRAM GPU)")
 _DROP_ENV = ("PYTORCH_CUDA_ALLOC_CONF", "PYTHONPATH", "PYTHONHOME")
 
 
@@ -61,7 +64,7 @@ def _run(cmd: list[str], dst: Path, unique_id):
     env = {k: v for k, v in os.environ.items() if k not in _DROP_ENV}
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
                          errors="replace", env=env)
-    tail, buf, stage, file, shown = [], "", None, "", None
+    tail, buf, stage, file, shown, done = [], "", None, "", None, "Done"
 
     def status(text):
         nonlocal shown
@@ -89,13 +92,16 @@ def _run(cmd: list[str], dst: Path, unique_id):
             pct = int(float(m.group(2)))
             bar.update_absolute(pct, 100)
             if stage == "preparing":
-                status("Loading the models…")
+                status("Loading the models (~10-90s)…")
             else:
                 status(f"{_STAGES.get(stage, stage)}{file if stage == 'download' else ''}: {pct}%")
         elif buf.strip():
             f = _FILE.search(buf.strip())
             if f:
                 file = f" ({f.group(1)}, {int(f.group(2)) / 1000:.1f} GB)" if int(f.group(2)) >= 1000 else f" ({f.group(1)})"
+            if _NONE_FOUND.search(buf.strip()):
+                done = _NONE_FOUND_HELP
+                print(f"[kukkiri] {done}", flush=True)
             if _SHOW.search(buf.strip()):
                 print(f"[kukkiri] {buf.strip()}", flush=True)
             tail = (tail + [buf])[-20:]
@@ -103,7 +109,7 @@ def _run(cmd: list[str], dst: Path, unique_id):
     if p.wait() != 0 or not dst.is_file():
         raise RuntimeError("kukkiri failed:\n" + "\n".join(tail))
     bar.update_absolute(100, 100)
-    status("Done")
+    status(done)
     return (VideoFromFile(str(dst)),)
 
 
@@ -132,11 +138,19 @@ class KukkiriMosaicRestore:
             "optional": {
                 "kukkiri_path": ("STRING", {"default": "", "tooltip": "path to the kukkiri command, if it is not found "
                                                                  "automatically"}),
+                "run_on_full_frame": ("BOOLEAN", {"default": False,
+                                                  "tooltip": "kiyo-ltx: redraw the whole picture instead of finding the "
+                                                             "mosaics. Only for mosaics the normal mode does not find: "
+                                                             "slow, needs a high-VRAM GPU, and also "
+                                                             "redraws faces and areas without a mosaic. The result is "
+                                                             "generated, not recovered: do not use it to try to "
+                                                             "identify real people"}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    def restore(self, video, model, sensitivity, vr, keep_fps, kukkiri_path="", unique_id=None):
+    def restore(self, video, model, sensitivity, vr, keep_fps, kukkiri_path="", run_on_full_frame=False,
+                unique_id=None):
         src = _source_file(video)
         dst = _temp_output()
         cmd = _kukkiri_command(kukkiri_path) + ["restore", str(src), "-o", str(dst), "--model", model, "--skip-check"]
@@ -144,6 +158,10 @@ class KukkiriMosaicRestore:
             cmd += ["--sensitivity", sensitivity]
         if keep_fps:
             cmd.append("--keep-fps")
+        if run_on_full_frame:
+            if model != "kiyo-ltx-v1" or vr != "off":
+                raise RuntimeError("run_on_full_frame needs the model kiyo-ltx-v1, with vr off")
+            cmd.append("--full-frame")
         if vr != "off":
             cmd += ["--vr", "sbs"] + (["--vr-lens", "fisheye"] if "fisheye" in vr else [])
         return _run(cmd, dst, unique_id)
