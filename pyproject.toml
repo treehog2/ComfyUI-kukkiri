@@ -2,7 +2,7 @@
 name = "comfyui-kukkiri"
 description = "Remove or add mosaics in video. Restore pixelated (mosaic-censored) areas with kiyo-ltx (an LTX-2.5 LoRA, best quality) or kiyo-v4 (fast), or add block mosaics automatically. Includes a core-nodes LTX-2.5 video-to-video template for the kiyo-ltx LoRA."
 keywords = ["mosaic", "mosaic removal", "remove mosaic", "mosaic restoration", "add mosaic", "pixelate", "pixelation", "video restoration", "video-to-video", "v2v", "LTX-2.5", "LTX", "LoRA"]
-version = "0.6.33"
+version = "0.6.34"
 license = { file = "LICENSE" }
 dependencies = []
 
